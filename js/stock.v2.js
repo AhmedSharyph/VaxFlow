@@ -3,6 +3,7 @@ import { postToCloud } from './cloud.v2.js';
 
 let isStockEditing = false;
 let editingStockId = null;
+let currentSearchTerm = '';
 
 export function renderStock() {
     const db = getDB();
@@ -15,20 +16,33 @@ export function renderStock() {
         const rows = db.exec({ sql: 'SELECT * FROM Stock;', rowMode: 'object', returnValue: 'resultRows' });
         const tbody = document.getElementById('stockTableBody');
         const totalEl = document.getElementById('statTotalStock');
-        const badgeEl = document.getElementById('stockCountBadge');
         
         if (totalEl) totalEl.innerText = rows.length;
-        if (badgeEl) badgeEl.innerText = `${rows.length} Items`;
         
         if (!tbody) return;
         tbody.innerHTML = '';
+
+        // Apply live filter based on search input
+        const filteredRows = rows.filter(r => {
+            if (!currentSearchTerm) return true;
+            const term = currentSearchTerm.toLowerCase();
+            return (
+                (r.category && r.category.toLowerCase().includes(term)) ||
+                (r.name && r.name.toLowerCase().includes(term)) ||
+                (r.batch && r.batch.toLowerCase().includes(term)) ||
+                (r.linked_accessory && r.linked_accessory.toLowerCase().includes(term))
+            );
+        });
         
-        if (rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">No inventory stock added. Click 'Add Stock Item' above.</td></tr>`;
+        if (filteredRows.length === 0) {
+            const emptyMsg = rows.length === 0 
+                ? "No inventory stock added. Click 'Add Stock Item' above." 
+                : "No matching stock items found.";
+            tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">${emptyMsg}</td></tr>`;
             return;
         }
 
-        rows.forEach(r => {
+        filteredRows.forEach(r => {
             const balance = r.opening - (r.used || 0) - (r.wasted || 0);
             let badgeColor = 'bg-slate-100 text-slate-700';
             if (r.category === 'Vaccines') badgeColor = 'bg-blue-50 text-blue-700 border border-blue-200';
@@ -145,12 +159,18 @@ window.deleteStockItem = function(id) {
     postToCloud('deleteStock', { id, uniqueKey: 'id' });
 }
 
-// Listen for core engine database ready event
-window.addEventListener('vaxflow-db-ready', () => {
-    renderStock();
+// Bind live search input listener once DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('stockSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value.trim();
+            renderStock();
+        });
+    }
+    setTimeout(renderStock, 600);
 });
 
-// Fallback initialization
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(renderStock, 600);
+window.addEventListener('vaxflow-db-ready', () => {
+    renderStock();
 });
