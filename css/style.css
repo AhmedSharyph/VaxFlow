@@ -1,0 +1,180 @@
+/* ===== VAXFLOW NIP — GLOBAL STYLES ===== */
+#vaxflow-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(to bottom right, #f8fafc, rgba(239, 246, 255, 0.4), rgba(224, 231, 255, 0.5));
+  color: #0f172a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#vaxflow-app *, #vaxflow-app *::before, #vaxflow-app *::after { box-sizing: border-box; }
+
+#vaxflow-app .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(199, 210, 254, 0.5);
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.08);
+}
+#vaxflow-app .blue-glow-btn {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#vaxflow-app .blue-glow-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+@keyframes vf-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+#vaxflow-app .animate-indeterminate {
+  animation: vf-indeterminate 1.2s ease-in-out infinite;
+  width: 50%;
+}
+@keyframes vf-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+#vaxflow-app .animate-pulse { animation: vf-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ===== FALLBACK UTILITIES (if Tailwind CSS fails to load) ===== */
+#vaxflow-app .fixed { position: fixed; }
+#vaxflow-app .inset-0 { inset: 0; }
+#vaxflow-app .z-40 { z-index: 40; }
+#vaxflow-app .z-50 { z-index: 50; }
+#vaxflow-app .flex { display: flex; }
+#vaxflow-app .hidden { display: none !important; }
+#vaxflow-app .grid { display: grid; }
+#vaxflow-app .items-center { align-items: center; }
+#vaxflow-app .justify-center { justify-content: center; }
+#vaxflow-app .justify-between { justify-content: space-between; }
+#vaxflow-app .text-center { text-align: center; }
+#vaxflow-app .w-full { width: 100%; }
+#vaxflow-app .mx-auto { margin-left: auto; margin-right: auto; }
+#vaxflow-app .flex-grow { flex-grow: 1; }
+#vaxflow-app .flex-col { flex-direction: column; }
+#vaxflow-app .max-w-\[1300px\] { max-width: 1300px; }
+#vaxflow-app .max-w-sm { max-width: 24rem; }
+#vaxflow-app .max-w-md { max-width: 28rem; }
+#vaxflow-app .max-w-xs { max-width: 20rem; }
+#vaxflow-app .space-y-1 > * + * { margin-top: 0.25rem; }
+#vaxflow-app .space-y-3 > * + * { margin-top: 0.75rem; }
+#vaxflow-app .space-y-4 > * + * { margin-top: 1rem; }
+#vaxflow-app .space-y-5 > * + * { margin-top: 1.25rem; }
+#vaxflow-app .space-y-6 > * + * { margin-top: 1.5rem; }
+#vaxflow-app .space-y-8 > * + * { margin-top: 2rem; }
+#vaxflow-app .gap-2 { gap: 0.5rem; }
+#vaxflow-app .gap-3 { gap: 0.75rem; }
+#vaxflow-app .gap-4 { gap: 1rem; }
+#vaxflow-app .gap-5 { gap: 1.25rem; }
+#vaxflow-app .gap-6 { gap: 1.5rem; }
+#vaxflow-app .gap-8 { gap: 2rem; }
+#vaxflow-app .p-5 { padding: 1.25rem; }
+#vaxflow-app .p-6 { padding: 1.5rem; }
+#vaxflow-app .p-8 { padding: 2rem; }
+#vaxflow-app .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
+#vaxflow-app .px-4 { padding-left: 1rem; padding-right: 1rem; }
+#vaxflow-app .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+#vaxflow-app .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+#vaxflow-app .px-8 { padding-left: 2rem; padding-right: 2rem; }
+#vaxflow-app .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+#vaxflow-app .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+#vaxflow-app .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+#vaxflow-app .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+#vaxflow-app .py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+#vaxflow-app .pt-3 { padding-top: 0.75rem; }
+#vaxflow-app .pt-2 { padding-top: 0.5rem; }
+#vaxflow-app .pb-3 { padding-bottom: 0.75rem; }
+#vaxflow-app .pb-2 { padding-bottom: 0.5rem; }
+#vaxflow-app .mt-1 { margin-top: 0.25rem; }
+#vaxflow-app .mt-2 { margin-top: 0.5rem; }
+#vaxflow-app .mt-4 { margin-top: 1rem; }
+#vaxflow-app .mb-1 { margin-bottom: 0.25rem; }
+#vaxflow-app .w-10 { width: 2.5rem; }
+#vaxflow-app .h-10 { height: 2.5rem; }
+#vaxflow-app .w-12 { width: 3rem; }
+#vaxflow-app .h-12 { height: 3rem; }
+#vaxflow-app .w-2 { width: 0.5rem; }
+#vaxflow-app .h-2 { height: 0.5rem; }
+#vaxflow-app .w-1\.5 { width: 0.375rem; }
+#vaxflow-app .h-1\.5 { height: 0.375rem; }
+#vaxflow-app .h-16 { height: 4rem; }
+#vaxflow-app .h-full { height: 100%; }
+#vaxflow-app .rounded-xl { border-radius: 0.75rem; }
+#vaxflow-app .rounded-2xl { border-radius: 1rem; }
+#vaxflow-app .rounded-3xl { border-radius: 1.5rem; }
+#vaxflow-app .rounded-full { border-radius: 9999px; }
+#vaxflow-app .rounded-md { border-radius: 0.375rem; }
+#vaxflow-app .rounded-lg { border-radius: 0.5rem; }
+#vaxflow-app .shadow-sm { box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08); }
+#vaxflow-app .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08); }
+#vaxflow-app .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); }
+#vaxflow-app .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+#vaxflow-app .text-xs { font-size: 0.75rem; line-height: 1.5; }
+#vaxflow-app .text-sm { font-size: 0.875rem; line-height: 1.5; }
+#vaxflow-app .text-base { font-size: 1rem; line-height: 1.5; }
+#vaxflow-app .text-lg { font-size: 1.125rem; line-height: 1.5; }
+#vaxflow-app .text-xl { font-size: 1.25rem; line-height: 1.4; }
+#vaxflow-app .text-2xl { font-size: 1.5rem; line-height: 1.3; }
+#vaxflow-app .text-3xl { font-size: 1.875rem; line-height: 1.2; }
+#vaxflow-app .font-medium { font-weight: 500; }
+#vaxflow-app .font-semibold { font-weight: 600; }
+#vaxflow-app .font-bold { font-weight: 700; }
+#vaxflow-app .font-extrabold { font-weight: 800; }
+#vaxflow-app .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+#vaxflow-app .tracking-tight { letter-spacing: -0.02em; }
+#vaxflow-app .tracking-wider { letter-spacing: 0.05em; }
+#vaxflow-app .uppercase { text-transform: uppercase; }
+#vaxflow-app .text-left { text-align: left; }
+#vaxflow-app .text-right { text-align: right; }
+#vaxflow-app .text-slate-400 { color: #94a3b8; }
+#vaxflow-app .text-slate-500 { color: #64748b; }
+#vaxflow-app .text-slate-700 { color: #334155; }
+#vaxflow-app .text-slate-900 { color: #0f172a; }
+#vaxflow-app .text-blue-500 { color: #3b82f6; }
+#vaxflow-app .text-blue-600 { color: #2563eb; }
+#vaxflow-app .text-blue-700 { color: #1d4ed8; }
+#vaxflow-app .text-blue-900 { color: #1e3a8a; }
+#vaxflow-app .text-white { color: #ffffff; }
+#vaxflow-app .text-emerald-600 { color: #059669; }
+#vaxflow-app .text-emerald-700 { color: #047857; }
+#vaxflow-app .bg-white { background: #ffffff; }
+#vaxflow-app .bg-blue-50 { background: #eff6ff; }
+#vaxflow-app .bg-blue-100 { background: #dbeafe; }
+#vaxflow-app .bg-blue-600 { background: #2563eb; }
+#vaxflow-app .bg-emerald-50 { background: #ecfdf5; }
+#vaxflow-app .bg-emerald-500 { background: #10b981; }
+#vaxflow-app .bg-slate-900 { background: #0f172a; }
+#vaxflow-app .border { border: 1px solid #e2e8f0; }
+#vaxflow-app .border-b { border-bottom: 1px solid #e2e8f0; }
+#vaxflow-app .border-t { border-top: 1px solid #e2e8f0; }
+#vaxflow-app .border-blue-100 { border-color: #dbeafe; }
+#vaxflow-app .border-blue-200 { border-color: #bfdbfe; }
+#vaxflow-app .border-emerald-200 { border-color: #a7f3d0; }
+#vaxflow-app .overflow-hidden { overflow: hidden; }
+#vaxflow-app .overflow-x-auto { overflow-x: auto; }
+#vaxflow-app .cursor-pointer { cursor: pointer; }
+#vaxflow-app .transition { transition: all 0.2s ease; }
+#vaxflow-app .sticky { position: sticky; }
+#vaxflow-app .top-0 { top: 0; }
+#vaxflow-app .divide-y > * + * { border-top: 1px solid #eff6ff; }
+#vaxflow-app table { border-collapse: collapse; }
+
+@media (max-width: 900px) {
+  #vaxflow-app .grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #vaxflow-app .grid-cols-3 { grid-template-columns: 1fr !important; }
+}
+#vaxflow-app ::-webkit-scrollbar { width: 10px; height: 10px; }
+#vaxflow-app ::-webkit-scrollbar-track { background: #f1f5f9; }
+#vaxflow-app ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+#vaxflow-app ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
