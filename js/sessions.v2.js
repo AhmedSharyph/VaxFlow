@@ -1,12 +1,14 @@
-import { getDB } from './db.js';
-import { postToCloud } from './cloud.js';
+import { getDB } from './db.v2.js';
+import { postToCloud } from './cloud.v2.js';
 
 let activeSessionId = null;
 let isSessionEditing = false;
 
 export function renderSessions() {
+    const db = getDB();
+    if (!db) return;
+
     try {
-        const db = getDB();
         const rows = db.exec({ sql: 'SELECT * FROM Sessions;', rowMode: 'object', returnValue: 'resultRows' });
         const tbody = document.getElementById('sessionsTableBody');
         
@@ -40,24 +42,28 @@ export function renderSessions() {
                 </tr>
             `;
         });
+
+        const gate = document.getElementById('loadingGate');
+        if (gate) {
+            gate.style.opacity = '0';
+            gate.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => gate.remove(), 300);
+        }
     } catch (err) {
-        console.log("Waiting for database initialization...", err);
+        console.error("Error rendering sessions:", err);
     }
 }
 
 window.openSessionView = function(id) {
     activeSessionId = id;
-    const tabSessions = document.getElementById('tab-sessions');
-    const tabStaff = document.getElementById('tab-staff');
-    const tabStock = document.getElementById('tab-stock');
-    const viewSession = document.getElementById('view-session');
-    const headerModeBadge = document.getElementById('headerModeBadge');
+    const listTab = document.getElementById('tab-sessions');
+    const viewWorkspace = document.getElementById('view-session');
 
-    if (tabSessions) tabSessions.classList.add('hidden');
-    if (tabStaff) tabStaff.classList.add('hidden');
-    if (tabStock) tabStock.classList.add('hidden');
-    if (viewSession) viewSession.classList.remove('hidden');
-    if (headerModeBadge) headerModeBadge.innerText = "Active Workspace";
+    if (listTab) listTab.classList.add('hidden');
+    if (viewWorkspace) {
+        viewWorkspace.classList.remove('hidden');
+        viewWorkspace.classList.add('flex');
+    }
 
     const db = getDB();
     const session = db.exec({ sql: 'SELECT * FROM Sessions WHERE id = ?;', bind: [id], rowMode: 'object', returnValue: 'resultRows' })[0];
@@ -90,6 +96,18 @@ window.openSessionView = function(id) {
             toggleBtn.className = "px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition shadow-sm";
         }
     }
+}
+
+window.returnToSessionsList = function() {
+    const listTab = document.getElementById('tab-sessions');
+    const viewWorkspace = document.getElementById('view-session');
+
+    if (viewWorkspace) {
+        viewWorkspace.classList.add('hidden');
+        viewWorkspace.classList.remove('flex');
+    }
+    if (listTab) listTab.classList.remove('hidden');
+    renderSessions();
 }
 
 window.toggleActiveSessionStatus = function() {
@@ -179,12 +197,20 @@ window.handleSessionSubmit = async function(event) {
     });
 
     closeSessionModal();
-    if (activeSessionId) window.openSessionView(activeSessionId);
-    else renderSessions();
+    if (activeSessionId && !document.getElementById('view-session').classList.contains('hidden')) {
+        window.openSessionView(activeSessionId);
+    } else {
+        renderSessions();
+    }
     postToCloud('Sessions', { id, facility, vaccinator, is_open: 1, uniqueKey: 'id' });
 }
 
-// Automatically trigger renderSessions once DOM and SQLite WASM are ready
+// Listen for core database ready event
+window.addEventListener('vaxflow-db-ready', () => {
+    renderSessions();
+});
+
+// Fallback trigger
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(renderSessions, 600);
 });
