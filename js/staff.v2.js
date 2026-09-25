@@ -1,11 +1,16 @@
-import { getDB } from './db.js';
-import { postToCloud } from './cloud.js';
+import { getDB } from './db.v2.js';
+import { postToCloud } from './cloud.v2.js';
 
 let isStaffEditing = false;
 
 export function renderStaff() {
     try {
         const db = getDB();
+        if (!db) {
+            setTimeout(renderStaff, 200);
+            return;
+        }
+
         const rows = db.exec({ sql: 'SELECT * FROM Staff;', rowMode: 'object', returnValue: 'resultRows' });
         const tbody = document.getElementById('staffTableBody');
         
@@ -19,7 +24,7 @@ export function renderStaff() {
         tbody.innerHTML = '';
 
         if (rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-6 px-6 text-center text-gray-400 italic">No staff members registered. Click 'Register Staff' above.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-6 px-6 text-center text-gray-400 italic">No staff members registered. Click 'Register New Staff' above.</td></tr>`;
             return;
         }
 
@@ -29,7 +34,9 @@ export function renderStaff() {
                 ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Disabled</span>`
                 : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active</span>`;
 
-            const roleColor = r.role === 'Supervisor' ? 'bg-purple-50 text-purple-700' : (r.role === 'Vaccinator' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700');
+            const roleColor = r.role === 'Supervisor' 
+                ? 'bg-purple-50 text-purple-700' 
+                : (r.role === 'Vaccinator' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700');
 
             tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 transition">
@@ -46,7 +53,8 @@ export function renderStaff() {
             `;
         });
     } catch (err) {
-        console.log("Waiting for database initialization...", err);
+        console.warn("Waiting for database initialization...", err);
+        setTimeout(renderStaff, 300);
     }
 }
 
@@ -73,12 +81,13 @@ window.openStaffModal = function(staffId = null) {
         document.getElementById('staffId').disabled = false;
         document.getElementById('staffId').value = "STF-" + Math.floor(100 + Math.random() * 900);
     }
+    
     const modal = document.getElementById('staffModal');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
-}
+};
 
 window.closeStaffModal = function() {
     const modal = document.getElementById('staffModal');
@@ -86,7 +95,7 @@ window.closeStaffModal = function() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
-}
+};
 
 window.handleStaffSubmit = async function(event) {
     event.preventDefault();
@@ -103,10 +112,10 @@ window.handleStaffSubmit = async function(event) {
 
     closeStaffModal();
     renderStaff();
-    postToCloud('Staff', { id, name, role, designation, is_disabled: 0, uniqueKey: 'id' });
-}
+    await postToCloud('Staff', { id, name, role, designation, is_disabled: 0, uniqueKey: 'id' });
+};
 
-window.toggleStaffStatus = function(id) {
+window.toggleStaffStatus = async function(id) {
     const db = getDB();
     const staff = db.exec({ sql: 'SELECT * FROM Staff WHERE id = ?;', bind: [id], rowMode: 'object', returnValue: 'resultRows' })[0];
     if (!staff) return;
@@ -114,10 +123,14 @@ window.toggleStaffStatus = function(id) {
     const newDisabled = Number(staff.is_disabled) === 1 ? 0 : 1;
     db.exec({ sql: 'UPDATE Staff SET is_disabled = ? WHERE id = ?;', bind: [newDisabled, id] });
     renderStaff();
-    postToCloud('Staff', { id: staff.id, name: staff.name, role: staff.role, designation: staff.designation, is_disabled: newDisabled, uniqueKey: 'id' });
-}
+    await postToCloud('Staff', { id: staff.id, name: staff.name, role: staff.role, designation: staff.designation, is_disabled: newDisabled, uniqueKey: 'id' });
+};
 
-// Automatically trigger renderStaff once database and DOM are ready
+// Listen for core database ready event or fallback
+window.addEventListener('vaxflow-db-ready', () => {
+    renderStaff();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(renderStaff, 600);
+    setTimeout(renderStaff, 400);
 });
