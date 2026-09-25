@@ -1,53 +1,69 @@
-import { getDB } from './db.js';
-import { postToCloud } from './cloud.js';
+import { getDB } from './db.v2.js';
+import { postToCloud } from './cloud.v2.js';
 
 let isStockEditing = false;
 let editingStockId = null;
 
 export function renderStock() {
     const db = getDB();
-    const rows = db.exec({ sql: 'SELECT * FROM Stock;', rowMode: 'object', returnValue: 'resultRows' });
-    const tbody = document.getElementById('stockTableBody');
-    const totalEl = document.getElementById('statTotalStock');
-    const badgeEl = document.getElementById('stockCountBadge');
-    
-    if (totalEl) totalEl.innerText = rows.length;
-    if (badgeEl) badgeEl.innerText = `${rows.length} Items`;
-    
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">No inventory stock added. Click 'Add Stock Item' above.</td></tr>`;
+    if (!db) {
+        setTimeout(renderStock, 200);
         return;
     }
 
-    rows.forEach(r => {
-        const balance = r.opening - (r.used || 0) - (r.wasted || 0);
-        let badgeColor = 'bg-slate-100 text-slate-700';
-        if (r.category === 'Vaccines') badgeColor = 'bg-blue-50 text-blue-700 border border-blue-200';
-        else if (r.category === 'Diluents') badgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-        else if (r.category === 'Droppers / Adapters') badgeColor = 'bg-sky-50 text-sky-700 border border-sky-200';
+    try {
+        const rows = db.exec({ sql: 'SELECT * FROM Stock;', rowMode: 'object', returnValue: 'resultRows' });
+        const tbody = document.getElementById('stockTableBody');
+        const totalEl = document.getElementById('statTotalStock');
+        const badgeEl = document.getElementById('stockCountBadge');
+        
+        if (totalEl) totalEl.innerText = rows.length;
+        if (badgeEl) badgeEl.innerText = `${rows.length} Items`;
+        
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">No inventory stock added. Click 'Add Stock Item' above.</td></tr>`;
+            return;
+        }
 
-        const kitInfo = r.linked_accessory ? `<br><span class="text-[10px] text-blue-600 font-semibold">Kit Pair: ${r.linked_accessory}</span>` : '';
+        rows.forEach(r => {
+            const balance = r.opening - (r.used || 0) - (r.wasted || 0);
+            let badgeColor = 'bg-slate-100 text-slate-700';
+            if (r.category === 'Vaccines') badgeColor = 'bg-blue-50 text-blue-700 border border-blue-200';
+            else if (r.category === 'Diluents') badgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+            else if (r.category === 'Droppers / Adapters') badgeColor = 'bg-sky-50 text-sky-700 border border-sky-200';
 
-        tbody.innerHTML += `
-            <tr class="hover:bg-blue-50/20 transition">
-                <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeColor}">${r.category}</span></td>
-                <td class="py-4 px-6 font-bold text-slate-900">${r.name} ${kitInfo}</td>
-                <td class="py-4 px-6 font-mono text-xs text-blue-600 font-medium">${r.batch}</td>
-                <td class="py-4 px-6 text-slate-600 text-xs">${r.expiry ? r.expiry.split('T')[0] : ''}</td>
-                <td class="py-4 px-6 text-center font-medium">${r.opening}</td>
-                <td class="py-4 px-6 text-center font-bold text-emerald-600">${r.used || 0}</td>
-                <td class="py-4 px-6 text-center font-bold text-rose-600">${r.wasted || 0}</td>
-                <td class="py-4 px-6 text-center font-extrabold text-slate-900">${balance}</td>
-                <td class="py-4 px-6 text-right space-x-3">
-                    <button type="button" onclick="window.openStockModal(${r.id})" class="text-xs text-blue-600 hover:underline font-bold">Edit</button>
-                    <button type="button" onclick="window.deleteStockItem(${r.id})" class="text-xs text-rose-600 hover:underline font-bold">Delete</button>
-                </td>
-            </tr>
-        `;
-    });
+            const kitInfo = r.linked_accessory ? `<br><span class="text-[10px] text-blue-600 font-semibold">Kit Pair: ${r.linked_accessory}</span>` : '';
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-blue-50/20 transition">
+                    <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeColor}">${r.category}</span></td>
+                    <td class="py-4 px-6 font-bold text-slate-900">${r.name} ${kitInfo}</td>
+                    <td class="py-4 px-6 font-mono text-xs text-blue-600 font-medium">${r.batch}</td>
+                    <td class="py-4 px-6 text-slate-600 text-xs">${r.expiry ? r.expiry.split('T')[0] : ''}</td>
+                    <td class="py-4 px-6 text-center font-medium">${r.opening}</td>
+                    <td class="py-4 px-6 text-center font-bold text-emerald-600">${r.used || 0}</td>
+                    <td class="py-4 px-6 text-center font-bold text-rose-600">${r.wasted || 0}</td>
+                    <td class="py-4 px-6 text-center font-extrabold text-slate-900">${balance}</td>
+                    <td class="py-4 px-6 text-right space-x-3">
+                        <button type="button" onclick="window.openStockModal(${r.id})" class="text-xs text-blue-600 hover:underline font-bold">Edit</button>
+                        <button type="button" onclick="window.deleteStockItem(${r.id})" class="text-xs text-rose-600 hover:underline font-bold">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        const gate = document.getElementById('loadingGate');
+        if (gate) {
+            gate.style.opacity = '0';
+            gate.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => gate.remove(), 300);
+        }
+    } catch (err) {
+        console.error("Error rendering stock:", err);
+    }
 }
 
 window.openStockModal = function(stockId = null) {
@@ -128,3 +144,13 @@ window.deleteStockItem = function(id) {
     renderStock();
     postToCloud('deleteStock', { id, uniqueKey: 'id' });
 }
+
+// Listen for core engine database ready event
+window.addEventListener('vaxflow-db-ready', () => {
+    renderStock();
+});
+
+// Fallback initialization
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(renderStock, 600);
+});
