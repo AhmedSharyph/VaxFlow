@@ -31,7 +31,6 @@ export function renderVaccinations() {
             if (headerFacEl) headerFacEl.innerText = `${session.facility} • Lead: ${session.vaccinator}`;
         }
 
-        // Fetch vaccinations for this session
         const rows = db.exec({ sql: 'SELECT * FROM Vaccinations WHERE session_id = ?;', bind: [activeSessionId], rowMode: 'object', returnValue: 'resultRows' });
         const tbody = document.getElementById('childTableBody');
         const badge = document.getElementById('childCountBadge');
@@ -51,7 +50,7 @@ export function renderVaccinations() {
                             <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">${r.vaccine}</span></td>
                             <td class="py-4 px-6 font-mono text-xs text-slate-600">${r.batch}</td>
                             <td class="py-4 px-6 text-right">
-                                <button type="button" onclick="window.deleteVaccinationRecord('${r.id}')" class="text-xs text-rose-600 hover:underline font-bold cursor-pointer">Remove</button>
+                                <button type="button" onclick="window.deleteVaccinationRecord('${r.id}', '${r.batch}')" class="text-xs text-rose-600 hover:underline font-bold cursor-pointer">Remove</button>
                             </td>
                         </tr>
                     `;
@@ -98,27 +97,69 @@ window.handleChildSubmit = async function(event) {
     const db = getDB();
     if (!db) return;
 
-    const childId = "CHD-" + Math.floor(1000 + Math.random() * 9000);
     const name = document.getElementById('childName').value;
     const dob = document.getElementById('childDob').value;
     const contact = document.getElementById('childContact').value;
     const vaccine = document.getElementById('childVaccine').value;
-    const batch = document.getElementById('childBatch').value;
+    const batch = document.getElementById('childBatch').value.trim();
+
+    // 1. STOCK VALIDATION: Check if batch exists in Stock and has remaining balance
+    const stockRows = db.exec({ sql: 'SELECT * FROM Stock WHERE batch = ?;', bind: [batch], rowMode: 'object', returnValue: 'resultRows' });
+    
+    if (stockRows.length === 0) {
+        alert(`Stock Validation Error: Batch number "${batch}" does not exist in your inventory stock records. Please add or check the stock batch first.`);
+        return;
+    }
+
+    const stockItem = stockRows[0];
+    const currentBalance = stockItem.opening - (stockItem.used || 0) - (stockItem.wasted || 0);
+
+    if (currentBalance <= 0) {
+        alert(`Stock Depleted: Batch "${batch}" (${stockItem.name}) has zero balance remaining (Opening: ${stockItem.opening}, Used: ${stockItem.used || 0}, Wasted: ${stockItem.wasted || 0}). Cannot vaccinate.`);
+        return;
+    }
+
+    // 2. PROCEED WITH VACCINATION & STOCK DEDUCTION
+    const childId = "CHD-" + Math.floor(1000 + Math.random() * 9000);
 
     db.exec({
         sql: 'INSERT INTO Vaccinations (id, session_id, child_name, dob, contact, vaccine, batch) VALUES (?, ?, ?, ?, ?, ?, ?);',
         bind: [childId, activeSessionId, name, dob, contact, vaccine, batch]
     });
 
+    // Automatically increment 'used' count for this batch in Stock
+    db.exec({
+        sql: 'UPDATE Stock SET used = COALESCE(used, 0) + 1 WHERE batch = ?;',
+        bind: [batch]
+    });
+
     window.closeChildModal();
     renderVaccinations();
+
+    // Sync vaccination and updated stock to cloud
     await postToCloud('Vaccinations', { id: childId, session_id: activeSessionId, child_name: name, dob, contact, vaccine, batch, uniqueKey: 'id' });
+    await postToCloud('Stock', { ...stockItem, used: (stockItem.used || 0) + 1, uniqueKey: 'id' });
 }
 
-window.deleteVaccinationRecord = function(id) {
+window.deleteVaccinationRecord = function(id, batch) {
     const db = getDB();
     if (!db) return;
+
+    // Delete vaccination record
     db.exec({ sql: 'DELETE FROM Vaccinations WHERE id = ?;', bind: [id] });
+
+    // Refund 1 unit back to the stock batch used count
+    if (batch) {
+        db.exec({
+            sql: 'UPDATE Stock SET used = MAX(0, COALESCE(used, 0) - 1) WHERE batch = ?;',
+            bind: [batch]
+        });
+        const updatedStock = db.exec({ sql: 'SELECT * FROM Stock WHERE batch = ?;', bind: [batch], rowMode: 'object', returnValue: 'resultRows' })[0];
+        if (updatedStock) {
+            postToCloud('Stock', { ...updatedStock, uniqueKey: 'id' });
+        }
+    }
+
     renderVaccinations();
     postToCloud('deleteVaccination', { id, uniqueKey: 'id' });
 }
@@ -127,7 +168,6 @@ window.addEventListener('vaxflow-db-ready', () => {
     renderVaccinations();
 });
 
-// Guaranteed safety fallback so the loading gate never gets stuck
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(renderVaccinations, 500);
     setTimeout(removeLoadingGate, 1200);
