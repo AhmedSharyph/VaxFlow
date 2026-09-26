@@ -8,7 +8,7 @@ const MODULE_ENDPOINTS = {
     Tally: 'YOUR_TALLY_SHEET_WEB_APP_URL'
 };
 
-const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQdlUx1iflpllwGC7rUUQ4RIS5eGQbKAePjp2QIgwdQJRoPEp_GVHDlNmXK1ocqizO/exec';
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3G0S5uCQD4eIAXavH9WB0UHmyOeQZHkIfkpQ-z3xyEh2pMqrGzofWtEawDXemJj3X/exec';
 
 export async function syncFromCloud(db) {
     const uniqueUrls = [...new Set(Object.values(MODULE_ENDPOINTS))];
