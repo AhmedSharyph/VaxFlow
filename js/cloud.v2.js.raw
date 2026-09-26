@@ -3,7 +3,7 @@ const MODULE_ENDPOINTS = {
     beneficiaries: 'https://script.google.com/macros/s/AKfycbxcNceNVdbo2MO88fP7yRmKReKBcT09503HThlZI3rMEDYAHWLFwxkzqWz4DDLHAisH/exec',
     Sessions: 'https://script.google.com/macros/s/AKfycbyaFHU80AcyTm8YW3HE1MmqWeYx7tMUt2perSyfTDTfl9a0KxNf5CyGoTdOPqLGYsjMog/exec',
     Staff: 'YOUR_STAFF_SHEET_WEB_APP_URL',
-    Stock: 'YOUR_STOCK_SHEET_WEB_APP_URL',
+    Stock: 'https://script.google.com/macros/s/AKfycbwHHRDACemm4qiQHvWQynpCARzseuLQ1Dgk6-Hck-hpUc5cjHk1HBAlJnGF7YJnbdeD/exec',
     ColdChain: 'YOUR_COLD_CHAIN_SHEET_WEB_APP_URL',
     Tally: 'YOUR_TALLY_SHEET_WEB_APP_URL'
 };
