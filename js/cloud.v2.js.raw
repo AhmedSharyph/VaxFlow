@@ -4,7 +4,7 @@ const MODULE_ENDPOINTS = {
     Sessions: 'https://script.google.com/macros/s/AKfycbyaFHU80AcyTm8YW3HE1MmqWeYx7tMUt2perSyfTDTfl9a0KxNf5CyGoTdOPqLGYsjMog/exec',
     Staff: 'https://script.google.com/macros/s/AKfycbz3KNKxYnOT3Rs6BQHwUxzAj8w7BcrwWUcVbsxSNNhMDd2wDXHR3qfFkIjTc3uhuzehUQ/exec',
     Stock: 'https://script.google.com/macros/s/AKfycbwHHRDACemm4qiQHvWQynpCARzseuLQ1Dgk6-Hck-hpUc5cjHk1HBAlJnGF7YJnbdeD/exec',
-    ColdChain: 'YOUR_COLD_CHAIN_SHEET_WEB_APP_URL',
+    ColdChain: 'https://script.google.com/macros/s/AKfycbxx-6kcSZAx52Hp309j0_ivWKZJIr3z4p3e407kv1KR5MJedcWeuIBlBYdOyBysvPkD/exec',
     Tally: 'YOUR_TALLY_SHEET_WEB_APP_URL'
 };
 
