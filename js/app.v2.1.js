@@ -1,5 +1,5 @@
-import { initDatabase, getDB } from './db.v2.js';
-import { syncFromCloud } from './cloud.v2.js';
+import { initDatabase, getDB } from './db.v2.1.js';
+import { syncFromCloud } from './cloud.v2.1.js';
 
 function checkDeviceAccess() {
     const ua = navigator.userAgent;
