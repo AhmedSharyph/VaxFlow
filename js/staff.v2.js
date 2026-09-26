@@ -2,59 +2,73 @@ import { getDB } from './db.v2.js';
 import { postToCloud } from './cloud.v2.js';
 
 let isStaffEditing = false;
+let editingStaffId = null;
+let currentSearchTerm = '';
 
 export function renderStaff() {
-    try {
-        const db = getDB();
-        if (!db) {
-            setTimeout(renderStaff, 200);
-            return;
-        }
+    const db = getDB();
+    if (!db) {
+        setTimeout(renderStaff, 200);
+        return;
+    }
 
+    try {
         const rows = db.exec({ sql: 'SELECT * FROM Staff;', rowMode: 'object', returnValue: 'resultRows' });
         const tbody = document.getElementById('staffTableBody');
-        
-        const totalStat = document.getElementById('statTotalStaff');
-        if (totalStat) totalStat.innerText = rows.length;
+        const badge = document.getElementById('staffCountBadge');
+        if (badge) badge.innerText = `${rows.length} Staff`;
 
-        const countBadge = document.getElementById('staffCountBadge');
-        if (countBadge) countBadge.innerText = `${rows.length} Records`;
-        
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        if (rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-6 px-6 text-center text-gray-400 italic">No staff members registered. Click 'Register New Staff' above.</td></tr>`;
+        const filteredRows = rows.filter(r => {
+            if (!currentSearchTerm) return true;
+            const term = currentSearchTerm.toLowerCase();
+            return (
+                (r.name && r.name.toLowerCase().includes(term)) ||
+                (r.role && r.role.toLowerCase().includes(term)) ||
+                (r.contact && r.contact.toLowerCase().includes(term)) ||
+                (r.id && r.id.toLowerCase().includes(term))
+            );
+        });
+
+        if (filteredRows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-6 px-6 text-center text-slate-400 italic">No registered staff found. Click 'Register Staff Member' above.</td></tr>`;
+            removeGate();
             return;
         }
 
-        rows.forEach(r => {
-            const isDisabled = Number(r.is_disabled) === 1;
-            const statusBadge = isDisabled 
-                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Disabled</span>`
-                : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active</span>`;
-
-            const roleColor = r.role === 'Supervisor' 
-                ? 'bg-purple-50 text-purple-700' 
-                : (r.role === 'Vaccinator' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700');
+        filteredRows.forEach(r => {
+            let roleBadge = 'bg-blue-50 text-blue-700 border border-blue-200';
+            if (r.role === 'Immunization Focal Point') roleBadge = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+            else if (r.role === 'Lead Vaccinator') roleBadge = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
 
             tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="py-4 px-6 font-mono font-medium text-gray-900">${r.id}</td>
-                    <td class="py-4 px-6 font-medium text-gray-900">${r.name}</td>
-                    <td class="py-4 px-6"><span class="px-2.5 py-0.5 rounded-md text-xs font-semibold ${roleColor}">${r.role}</span></td>
-                    <td class="py-4 px-6 text-gray-600">${r.designation}</td>
-                    <td class="py-4 px-6 text-center">${statusBadge}</td>
+                <tr class="hover:bg-blue-50/20 transition">
+                    <td class="py-4 px-6 font-bold text-slate-900">${r.name}<br><span class="text-xs font-mono text-blue-600">ID: ${r.id}</span></td>
+                    <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${roleBadge}">${r.role}</span></td>
+                    <td class="py-4 px-6 text-slate-600 font-mono text-xs">${r.contact}</td>
                     <td class="py-4 px-6 text-right space-x-3">
-                        <button onclick="window.openStaffModal('${r.id}')" class="text-xs text-indigo-600 hover:underline font-medium">Edit</button>
-                        <button onclick="window.toggleStaffStatus('${r.id}')" class="text-xs ${isDisabled ? 'text-emerald-600' : 'text-rose-600'} font-medium">${isDisabled ? 'Enable' : 'Disable'}</button>
+                        <button type="button" onclick="window.openStaffModal('${r.id}')" class="text-xs text-blue-600 hover:underline font-bold cursor-pointer">Edit</button>
+                        <button type="button" onclick="window.deleteStaffItem('${r.id}')" class="text-xs text-rose-600 hover:underline font-bold cursor-pointer">Delete</button>
                     </td>
                 </tr>
             `;
         });
+
+        removeGate();
     } catch (err) {
-        console.warn("Waiting for database initialization...", err);
-        setTimeout(renderStaff, 300);
+        console.error("Error rendering staff:", err);
+        removeGate();
+    }
+}
+
+function removeGate() {
+    const gate = document.getElementById('loadingGate');
+    if (gate) {
+        gate.style.opacity = '0';
+        gate.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => gate.remove(), 300);
     }
 }
 
@@ -62,32 +76,30 @@ window.openStaffModal = function(staffId = null) {
     const form = document.getElementById('staffForm');
     if (form) form.reset();
     const db = getDB();
+    const titleEl = document.getElementById('staffModalTitle');
+    const modal = document.getElementById('staffModal');
 
-    if (staffId) {
+    if (staffId !== null && staffId !== undefined) {
         isStaffEditing = true;
+        editingStaffId = staffId;
         const staff = db.exec({ sql: 'SELECT * FROM Staff WHERE id = ?;', bind: [staffId], rowMode: 'object', returnValue: 'resultRows' })[0];
         if (!staff) return;
-        document.getElementById('staffModalTitle').innerText = "Edit Staff Member";
-        document.getElementById('staffModalSubmitBtn').innerText = "Update Staff";
-        document.getElementById('staffId').value = staff.id;
-        document.getElementById('staffId').disabled = true;
-        document.getElementById('staffName').value = staff.name;
-        document.getElementById('staffRole').value = staff.role;
-        document.getElementById('staffDesignation').value = staff.designation;
+
+        if (titleEl) titleEl.innerText = "Edit Staff Member";
+        if (document.getElementById('staffName')) document.getElementById('staffName').value = staff.name;
+        if (document.getElementById('staffRole')) document.getElementById('staffRole').value = staff.role;
+        if (document.getElementById('staffContact')) document.getElementById('staffContact').value = staff.contact;
     } else {
         isStaffEditing = false;
-        document.getElementById('staffModalTitle').innerText = "Register Staff Member";
-        document.getElementById('staffModalSubmitBtn').innerText = "Save Staff";
-        document.getElementById('staffId').disabled = false;
-        document.getElementById('staffId').value = "STF-" + Math.floor(100 + Math.random() * 900);
+        editingStaffId = null;
+        if (titleEl) titleEl.innerText = "Register Staff Member";
     }
-    
-    const modal = document.getElementById('staffModal');
+
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
-};
+}
 
 window.closeStaffModal = function() {
     const modal = document.getElementById('staffModal');
@@ -95,42 +107,61 @@ window.closeStaffModal = function() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
-};
+}
 
 window.handleStaffSubmit = async function(event) {
     event.preventDefault();
     const db = getDB();
-    const id = document.getElementById('staffId').value;
+    if (!db) return;
+
     const name = document.getElementById('staffName').value;
     const role = document.getElementById('staffRole').value;
-    const designation = document.getElementById('staffDesignation').value;
+    const contact = document.getElementById('staffContact').value;
 
-    db.exec({
-        sql: 'INSERT OR REPLACE INTO Staff (id, name, role, designation, is_disabled) VALUES (?, ?, ?, ?, COALESCE((SELECT is_disabled FROM Staff WHERE id = ?), 0));',
-        bind: [id, name, role, designation, id]
-    });
+    let staffId = editingStaffId;
+    if (!isStaffEditing || !staffId) {
+        staffId = "STF-" + Math.floor(1000 + Math.random() * 9000);
+    }
 
-    closeStaffModal();
+    if (isStaffEditing && editingStaffId) {
+        db.exec({
+            sql: 'UPDATE Staff SET name = ?, role = ?, contact = ? WHERE id = ?;',
+            bind: [name, role, contact, editingStaffId]
+        });
+    } else {
+        db.exec({
+            sql: 'INSERT INTO Staff (id, name, role, contact) VALUES (?, ?, ?, ?);',
+            bind: [staffId, name, role, contact]
+        });
+    }
+
+    const savedStaff = db.exec({ sql: 'SELECT * FROM Staff WHERE id = ?;', bind: [staffId], rowMode: 'object', returnValue: 'resultRows' })[0];
+
+    window.closeStaffModal();
     renderStaff();
-    await postToCloud('Staff', { id, name, role, designation, is_disabled: 0, uniqueKey: 'id' });
-};
+    await postToCloud('Staff', { ...savedStaff, uniqueKey: 'id' });
+}
 
-window.toggleStaffStatus = async function(id) {
+window.deleteStaffItem = function(id) {
     const db = getDB();
-    const staff = db.exec({ sql: 'SELECT * FROM Staff WHERE id = ?;', bind: [id], rowMode: 'object', returnValue: 'resultRows' })[0];
-    if (!staff) return;
-
-    const newDisabled = Number(staff.is_disabled) === 1 ? 0 : 1;
-    db.exec({ sql: 'UPDATE Staff SET is_disabled = ? WHERE id = ?;', bind: [newDisabled, id] });
+    if (!db) return;
+    db.exec({ sql: 'DELETE FROM Staff WHERE id = ?;', bind: [id] });
     renderStaff();
-    await postToCloud('Staff', { id: staff.id, name: staff.name, role: staff.role, designation: staff.designation, is_disabled: newDisabled, uniqueKey: 'id' });
-};
-
-// Listen for core database ready event or fallback
-window.addEventListener('vaxflow-db-ready', () => {
-    renderStaff();
-});
+    postToCloud('deleteStaff', { id, uniqueKey: 'id' });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(renderStaff, 400);
+    const searchInput = document.getElementById('staffSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value.trim();
+            renderStaff();
+        });
+    }
+    setTimeout(renderStaff, 500);
+    setTimeout(removeGate, 1200);
+});
+
+window.addEventListener('vaxflow-db-ready', () => {
+    renderStaff();
 });
