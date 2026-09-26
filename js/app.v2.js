@@ -4,9 +4,9 @@ import { syncFromCloud } from './cloud.v2.js';
 function checkDeviceAccess() {
     const ua = navigator.userAgent;
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
-    const isSmallScreen = window.innerWidth < 1024;
 
-    if (isMobile || isSmallScreen) {
+    // Only block if strictly mobile, allowing standard desktop and laptop windows
+    if (isMobile) {
         document.body.innerHTML = `
             <div style="background-color: #0f172a; color: white; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; text-align: center; padding: 2rem;">
                 <div style="max-width: 28rem; background: #1e293b; padding: 2.5rem; border-radius: 1rem; border: 1px solid #334155; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
@@ -51,6 +51,18 @@ async function bootstrapV2() {
     } catch (err) {
         if (err.message && err.message.includes("Access denied")) return;
         console.error("Initialization failed:", err);
+        // Dispatch event even on error so modules can attempt to render from local fallback
+        window.dispatchEvent(new CustomEvent('vaxflow-db-ready'));
+    } finally {
+        // Guaranteed safety fallback to clear loading gate if anything stalls
+        setTimeout(() => {
+            const gate = document.getElementById('loadingGate');
+            if (gate && gate.parentNode) {
+                gate.style.opacity = '0';
+                gate.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => gate.remove(), 300);
+            }
+        }, 1000);
     }
 }
 
