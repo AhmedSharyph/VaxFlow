@@ -1,6 +1,6 @@
 // Map module tables or sheets to their specific Google Apps Script Web App URLs
 const MODULE_ENDPOINTS = {
-    beneficiaries: 'YOUR_REGISTER_SHEET_WEB_APP_URL',
+    beneficiaries: 'https://script.google.com/macros/s/AKfycbxcNceNVdbo2MO88fP7yRmKReKBcT09503HThlZI3rMEDYAHWLFwxkzqWz4DDLHAisH/exec',
     Sessions: 'https://script.google.com/macros/s/AKfycbyQdlUx1iflpllwGC7rUUQ4RIS5eGQbKAePjp2QIgwdQJRoPEp_GVHDlNmXK1ocqizO/exec',
     Staff: 'YOUR_STAFF_SHEET_WEB_APP_URL',
     Stock: 'YOUR_STOCK_SHEET_WEB_APP_URL',
