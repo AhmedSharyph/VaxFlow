@@ -1,4 +1,31 @@
-// db.v2.js snippet for table initialization
+import sqlite3InitModule from 'https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@3.45.1-build1/+esm';
+
+let dbInstance = null;
+
+export async function initDatabase() {
+    if (dbInstance) return dbInstance;
+    try {
+        const sqlite3 = await sqlite3InitModule();
+        if ('opfs' in sqlite3) {
+            dbInstance = new sqlite3.oo1.OpfsDb('vaxflow_v2.sqlite3');
+        } else {
+            dbInstance = new sqlite3.oo1.DB('vaxflow_v2.sqlite3', 'ct');
+        }
+        
+        // Execute table creation schema
+        initDB(dbInstance);
+        return dbInstance;
+    } catch (err) {
+        console.error("SQLite initialization error:", err);
+        // Fallback to in-memory database if OPFS is restricted
+        const sqlite3 = await sqlite3InitModule();
+        dbInstance = new sqlite3.oo1.DB(':memory:', 'ct');
+        initDB(dbInstance);
+        return dbInstance;
+    }
+}
+
+// Alias support for both naming conventions
 export function initDB(db) {
     db.exec(`
         CREATE TABLE IF NOT EXISTS Sessions (
@@ -34,4 +61,8 @@ export function initDB(db) {
             batch TEXT
         );
     `);
+}
+
+export function getDB() {
+    return dbInstance;
 }
