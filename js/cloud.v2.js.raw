@@ -1,0 +1,125 @@
+// Map module tables or sheets to their specific Google Apps Script Web App URLs
+const MODULE_ENDPOINTS = {
+    beneficiaries: 'YOUR_REGISTER_SHEET_WEB_APP_URL',
+    Sessions: 'https://script.google.com/macros/s/AKfycbyQdlUx1iflpllwGC7rUUQ4RIS5eGQbKAePjp2QIgwdQJRoPEp_GVHDlNmXK1ocqizO/exec',
+    Staff: 'YOUR_STAFF_SHEET_WEB_APP_URL',
+    Stock: 'YOUR_STOCK_SHEET_WEB_APP_URL',
+    ColdChain: 'YOUR_COLD_CHAIN_SHEET_WEB_APP_URL',
+    Tally: 'YOUR_TALLY_SHEET_WEB_APP_URL'
+};
+
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQdlUx1iflpllwGC7rUUQ4RIS5eGQbKAePjp2QIgwdQJRoPEp_GVHDlNmXK1ocqizO/exec';
+
+export async function syncFromCloud(db) {
+    const uniqueUrls = [...new Set(Object.values(MODULE_ENDPOINTS))];
+
+    for (const url of uniqueUrls) {
+        if (!url || !url.startsWith('http') || url.includes('YOUR_')) continue;
+        try {
+            const res = await fetch(url + '?action=fetchAll');
+            const data = await res.json();
+            
+            if (data.tables) {
+                if (data.tables.Sessions) {
+                    data.tables.Sessions.forEach(s => {
+                        db.exec({
+                            sql: 'INSERT OR REPLACE INTO Sessions (id, facility, vaccinator, is_open, session_date, sync_status) VALUES (?, ?, ?, ?, ?, ?);',
+                            bind: [s.id, s.facility, s.vaccinator, s.is_open !== undefined ? Number(s.is_open) : 1, s.session_date || '', 'synced']
+                        });
+                    });
+                }
+                if (data.tables.Staff) {
+                    data.tables.Staff.forEach(st => {
+                        db.exec({
+                            sql: 'INSERT OR REPLACE INTO Staff (id, name, role, designation, contact, is_disabled, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?);',
+                            bind: [st.id, st.name, st.role, st.designation, st.contact || '', st.is_disabled !== undefined ? Number(st.is_disabled) : 0, 'synced']
+                        });
+                    });
+                }
+                if (data.tables.Stock) {
+                    data.tables.Stock.forEach(stk => {
+                        db.exec({
+                            sql: 'INSERT OR REPLACE INTO Stock (id, item_id, category, name, batch, expiry, opening, used, wasted, linked_accessory, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+                            bind: [stk.id || null, stk.item_id || stk.id || '', stk.category || 'Vaccines', stk.name, stk.batch, stk.expiry, stk.opening, stk.used || 0, stk.wasted || 0, stk.linked_accessory || '', 'synced']
+                        });
+                    });
+                }
+                if (data.tables.beneficiaries) {
+                    data.tables.beneficiaries.forEach(b => {
+                        db.exec({
+                            sql: `INSERT OR REPLACE INTO beneficiaries (
+                                beneficiary_id, eir_id, foolhumaa_form_number, beneficiary_national_id, 
+                                currently_living, beneficiary_name, dob, sex, country, atoll_island_residence, 
+                                current_address, mother_name, mother_national_id, primary_contact, caregiver_name, 
+                                caregiver_id, caregiver_contact, gestational_age_weeks, birth_weight, delivery_mode, 
+                                number_delivered, birth_facility, HepB_Within24h, remarks, registration_date, sync_status
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                            bind: [
+                                b.beneficiary_id || '',
+                                b.eir_id || '',
+                                b.foolhumaa_form_number || '',
+                                b.beneficiary_national_id || '',
+                                b.currently_living || 'Sh. Funadhoo',
+                                b.beneficiary_name || '',
+                                b.dob || '',
+                                b.sex || '',
+                                b.country || 'Maldives',
+                                b.atoll_island_residence || '',
+                                b.current_address || '',
+                                b.mother_name || '',
+                                b.mother_national_id || '',
+                                b.primary_contact || '',
+                                b.caregiver_name || '',
+                                b.caregiver_id || '',
+                                b.caregiver_contact || '',
+                                b.gestational_age_weeks !== undefined && b.gestational_age_weeks !== '' ? Number(b.gestational_age_weeks) : null,
+                                b.birth_weight !== undefined && b.birth_weight !== '' ? Number(b.birth_weight) : null,
+                                b.delivery_mode || '',
+                                b.number_delivered !== undefined && b.number_delivered !== '' ? Number(b.number_delivered) : 1,
+                                b.birth_facility || '',
+                                b.HepB_Within24h || 'Pending',
+                                b.remarks || '',
+                                b.registration_date || new Date().toISOString(),
+                                'synced'
+                            ]
+                        });
+                    });
+                }
+                if (data.tables.ColdChain) {
+                    data.tables.ColdChain.forEach(cc => {
+                        db.exec({
+                            sql: 'INSERT OR REPLACE INTO ColdChain (equipment_id, equipment_name, equipment_type, temperature, status, last_checked, remarks, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+                            bind: [cc.equipment_id, cc.equipment_name, cc.equipment_type, cc.temperature !== undefined ? Number(cc.temperature) : null, cc.status, cc.last_checked, cc.remarks || '', 'synced']
+                        });
+                    });
+                }
+                if (data.tables.Tally) {
+                    data.tables.Tally.forEach(t => {
+                        db.exec({
+                            sql: 'INSERT OR REPLACE INTO Tally (tally_id, tally_date, session_id, vaccine_code, dose_number, age_group, count, facility, remarks, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+                            bind: [t.tally_id, t.tally_date, t.session_id, t.vaccine_code, t.dose_number, t.age_group, t.count !== undefined ? Number(t.count) : 0, t.facility || '', t.remarks || '', 'synced']
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Cloud sync load failed for endpoint:", url, err);
+        }
+    }
+}
+
+export async function postToCloud(tableName, payload) {
+    const targetUrl = MODULE_ENDPOINTS[tableName] || DEFAULT_APPS_SCRIPT_URL;
+    if (!targetUrl || !targetUrl.startsWith('http') || targetUrl.includes('YOUR_')) return;
+
+    try {
+        await fetch(targetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ tableName, payload, actor: 'Ahmed Shareef' })
+        });
+    } catch (err) {
+        console.error("Background push failed for table:", tableName, err);
+    }
+}
