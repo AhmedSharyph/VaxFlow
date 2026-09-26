@@ -1,5 +1,5 @@
-import { getDB } from './db.v2.js';
-import { postToCloud } from './cloud.v2.js';
+import { getDB } from './db.v2.1.js';
+import { postToCloud } from './cloud.v2.1.js';
 
 document.addEventListener('vaxflow-db-ready', () => {
     initTallyModule();
