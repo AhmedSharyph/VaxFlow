@@ -1,33 +1,18 @@
-import sqlite3InitModule from 'https://esm.sh/@sqlite.org/sqlite-wasm';
-
-let dbInstance = null;
-
-export async function initDatabase(onProgress) {
-    if (dbInstance) return dbInstance;
-    
-    if (onProgress) onProgress('Loading SQLite WASM module...');
-    const sqlite3 = await sqlite3InitModule();
-
-    if (onProgress) onProgress('Initializing local database engine...');
-    dbInstance = new sqlite3.oo1.DB(':memory:', 'c');
-
-    if (onProgress) onProgress('Creating workstation schemas...');
-    dbInstance.exec(`
+// db.v2.js snippet for table initialization
+export function initDB(db) {
+    db.exec(`
         CREATE TABLE IF NOT EXISTS Sessions (
             id TEXT PRIMARY KEY,
             facility TEXT,
             vaccinator TEXT,
             is_open INTEGER DEFAULT 1
         );
-
         CREATE TABLE IF NOT EXISTS Staff (
             id TEXT PRIMARY KEY,
             name TEXT,
             role TEXT,
-            designation TEXT,
-            is_disabled INTEGER DEFAULT 0
+            contact TEXT
         );
-
         CREATE TABLE IF NOT EXISTS Stock (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT,
@@ -36,14 +21,17 @@ export async function initDatabase(onProgress) {
             expiry TEXT,
             opening INTEGER,
             used INTEGER DEFAULT 0,
-            wasted INTEGER DEFAULT 0
+            wasted INTEGER DEFAULT 0,
+            linked_accessory TEXT
+        );
+        CREATE TABLE IF NOT EXISTS Vaccinations (
+            id TEXT PRIMARY KEY,
+            session_id TEXT,
+            child_name TEXT,
+            dob TEXT,
+            contact TEXT,
+            vaccine TEXT,
+            batch TEXT
         );
     `);
-    
-    if (onProgress) onProgress('Database ready.');
-    return dbInstance;
-}
-
-export function getDB() {
-    return dbInstance;
 }
