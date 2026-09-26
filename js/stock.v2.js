@@ -18,11 +18,9 @@ export function renderStock() {
         const totalEl = document.getElementById('statTotalStock');
         
         if (totalEl) totalEl.innerText = rows.length;
-        
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        // Apply live filter based on search input
         const filteredRows = rows.filter(r => {
             if (!currentSearchTerm) return true;
             const term = currentSearchTerm.toLowerCase();
@@ -35,10 +33,7 @@ export function renderStock() {
         });
         
         if (filteredRows.length === 0) {
-            const emptyMsg = rows.length === 0 
-                ? "No inventory stock added. Click 'Add Stock Item' above." 
-                : "No matching stock items found.";
-            tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">${emptyMsg}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="py-6 px-6 text-center text-slate-400 italic">No matching stock items found.</td></tr>`;
             return;
         }
 
@@ -49,12 +44,10 @@ export function renderStock() {
             else if (r.category === 'Diluents') badgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
             else if (r.category === 'Droppers / Adapters') badgeColor = 'bg-sky-50 text-sky-700 border border-sky-200';
 
-            const kitInfo = r.linked_accessory ? `<br><span class="text-[10px] text-blue-600 font-semibold">Kit Pair: ${r.linked_accessory}</span>` : '';
-
             tbody.innerHTML += `
                 <tr class="hover:bg-blue-50/20 transition">
                     <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeColor}">${r.category}</span></td>
-                    <td class="py-4 px-6 font-bold text-slate-900">${r.name} ${kitInfo}</td>
+                    <td class="py-4 px-6 font-bold text-slate-900">${r.name}</td>
                     <td class="py-4 px-6 font-mono text-xs text-blue-600 font-medium">${r.batch}</td>
                     <td class="py-4 px-6 text-slate-600 text-xs">${r.expiry ? r.expiry.split('T')[0] : ''}</td>
                     <td class="py-4 px-6 text-center font-medium">${r.opening}</td>
@@ -62,21 +55,26 @@ export function renderStock() {
                     <td class="py-4 px-6 text-center font-bold text-rose-600">${r.wasted || 0}</td>
                     <td class="py-4 px-6 text-center font-extrabold text-slate-900">${balance}</td>
                     <td class="py-4 px-6 text-right space-x-3">
-                        <button type="button" onclick="window.openStockModal(${r.id})" class="text-xs text-blue-600 hover:underline font-bold">Edit</button>
-                        <button type="button" onclick="window.deleteStockItem(${r.id})" class="text-xs text-rose-600 hover:underline font-bold">Delete</button>
+                        <button type="button" onclick="window.openStockModal(${r.id})" class="text-xs text-blue-600 hover:underline font-bold cursor-pointer">Edit</button>
+                        <button type="button" onclick="window.deleteStockItem(${r.id})" class="text-xs text-rose-600 hover:underline font-bold cursor-pointer">Delete</button>
                     </td>
                 </tr>
             `;
         });
 
-        const gate = document.getElementById('loadingGate');
-        if (gate) {
-            gate.style.opacity = '0';
-            gate.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => gate.remove(), 300);
-        }
+        removeGate();
     } catch (err) {
         console.error("Error rendering stock:", err);
+        removeGate();
+    }
+}
+
+function removeGate() {
+    const gate = document.getElementById('loadingGate');
+    if (gate) {
+        gate.style.opacity = '0';
+        gate.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => gate.remove(), 300);
     }
 }
 
@@ -84,7 +82,6 @@ window.openStockModal = function(stockId = null) {
     const form = document.getElementById('stockForm');
     if (form) form.reset();
     const db = getDB();
-
     const titleEl = document.getElementById('stockModalTitle');
     const modal = document.getElementById('stockModal');
 
@@ -159,7 +156,6 @@ window.deleteStockItem = function(id) {
     postToCloud('deleteStock', { id, uniqueKey: 'id' });
 }
 
-// Bind live search input listener once DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('stockSearchInput');
     if (searchInput) {
